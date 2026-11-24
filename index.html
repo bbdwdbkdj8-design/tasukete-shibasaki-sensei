@@ -63,6 +63,42 @@
       .result-msg { font-size: 16px; line-height: 1.9; color: #d9efe9; margin: 0 0 28px; }
       .result-emoji { font-size: 68px; line-height: 1; }
 
+      /* ===== 全クリア時：朝焼けの屋上シーン ===== */
+      #rooftop-scene { display: none; }
+      #result-screen.win-mode { background: #1d1526; overflow: hidden; }
+      #result-screen.win-mode #rooftop-scene {
+        display: block; position: absolute; inset: 0; z-index: 0;
+      }
+      #rooftop-scene svg { width: 100%; height: 100%; display: block; }
+      #result-screen.win-mode > *:not(#rooftop-scene) { position: relative; z-index: 1; }
+      #result-screen.win-mode .result-title.win {
+        color: #fff7ea; text-shadow: 0 2px 22px rgba(255,140,80,.85), 0 1px 3px rgba(60,20,50,.6);
+      }
+      #result-screen.win-mode .result-msg {
+        color: #fff3e2;
+        background: rgba(24, 12, 30, 0.48);
+        border: 1px solid rgba(255, 200, 150, 0.35);
+        border-radius: 14px; padding: 14px 18px;
+        text-shadow: 0 1px 3px rgba(40, 10, 30, .55);
+      }
+      #result-screen.win-mode .result-emoji { filter: drop-shadow(0 2px 10px rgba(255,150,80,.7)); }
+
+      /* ===== 屋上から落ちるフェードアウト ===== */
+      #result-screen.falling {
+        animation: fallAway 1.15s cubic-bezier(.5, 0, .9, .4) forwards;
+        pointer-events: none;
+      }
+      @keyframes fallAway {
+        0%   { transform: translateY(0) rotate(0deg); opacity: 1; filter: blur(0); }
+        12%  { transform: translateY(1.6vh) rotate(-0.4deg); opacity: 1; }
+        55%  { opacity: 0.85; }
+        100% { transform: translateY(108vh) rotate(2.6deg); opacity: 0; filter: blur(3px); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #result-screen.falling { animation: fallFade .3s ease-out forwards; }
+        @keyframes fallFade { to { opacity: 0; } }
+      }
+
       #hud {
         position: fixed; top: calc(10px + env(safe-area-inset-top)); left: 0; right: 0;
         display: flex; justify-content: flex-start; align-items: flex-start; gap: 8px;
@@ -71,6 +107,10 @@
       #stage-label {
         font-size: 15px; font-weight: 800; letter-spacing: .1em; color: #ffe9a8;
         background: rgba(4,24,26,.55); border-radius: 999px; padding: 8px 14px;
+      }
+      #stage-label.final {
+        color: #fff; background: rgba(160,20,40,.75);
+        box-shadow: 0 0 14px rgba(255,60,80,.55);
       }
       #progress-label {
         font-size: 15px; font-weight: 800; letter-spacing: .1em; color: #bff3e6;
@@ -101,8 +141,8 @@
     <div id="stage"><canvas id="game"></canvas></div>
 
     <div id="hud" style="visibility:hidden">
-      <div id="stage-label">STAGE 1/5</div>
-      <div id="stage-dots"><span></span><span></span><span></span><span></span><span></span></div>
+      <div id="stage-label">STAGE 1/6</div>
+      <div id="stage-dots"><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <div id="progress-label">切開 0%</div>
     </div>
     <button id="bgm-btn" type="button">♪ BGM：ON</button>
@@ -116,8 +156,9 @@
       <div class="howto">
         線に沿って、ミシンみたいに<br>
         心臓をまっすぐ縫うようになぞるだけ。<br>
-        <b>全5ステージ制。</b>進むほど線は細く、<br>
+        <b>全6ステージ制。</b>進むほど線は細く、<br>
         クネクネと難しくなっていく。<br>
+        最終ステージは<b>「虎澤先輩」</b>。<br>
         <b>指を離さず、ゆっくり正確に。</b><br>
         <span class="die">線からはみ出したら、患者は死ぬ。</span>
       </div>
@@ -126,6 +167,116 @@
 
     <!-- 結果 -->
     <div class="screen hidden" id="result-screen">
+      <!-- 全クリア時だけ表示：朝焼けの屋上 -->
+      <div id="rooftop-scene" aria-hidden="true">
+        <svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" focusable="false">
+          <defs>
+            <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#232c52"/>
+              <stop offset="0.28" stop-color="#57406e"/>
+              <stop offset="0.48" stop-color="#b8556b"/>
+              <stop offset="0.63" stop-color="#f07f5f"/>
+              <stop offset="0.78" stop-color="#ffb877"/>
+              <stop offset="1" stop-color="#ffe3ae"/>
+            </linearGradient>
+            <radialGradient id="sunGlow" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#ffd98c" stop-opacity="0.95"/>
+              <stop offset="0.55" stop-color="#ffab63" stop-opacity="0.45"/>
+              <stop offset="1" stop-color="#ffab63" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#4a3548"/>
+              <stop offset="1" stop-color="#1d1526"/>
+            </linearGradient>
+            <pattern id="fenceMesh" width="9" height="9" patternUnits="userSpaceOnUse">
+              <path d="M0,9 L9,0 M-2,2 L2,-2 M7,11 L11,7" stroke="#140d1e" stroke-width="1.1" opacity="0.55"/>
+              <path d="M0,0 L9,9 M-2,7 L2,11 M7,-2 L11,2" stroke="#140d1e" stroke-width="1.1" opacity="0.55"/>
+            </pattern>
+          </defs>
+
+          <!-- 朝焼けの空 -->
+          <rect x="0" y="0" width="400" height="800" fill="url(#skyGrad)"/>
+          <!-- 雲 -->
+          <g fill="#ff9e8a" opacity="0.5">
+            <ellipse cx="70" cy="130" rx="58" ry="11"/>
+            <ellipse cx="120" cy="142" rx="42" ry="8"/>
+            <ellipse cx="320" cy="215" rx="66" ry="12"/>
+            <ellipse cx="265" cy="228" rx="40" ry="8"/>
+            <ellipse cx="150" cy="320" rx="52" ry="9"/>
+          </g>
+          <g fill="#6e4470" opacity="0.35">
+            <ellipse cx="300" cy="105" rx="48" ry="9"/>
+            <ellipse cx="60" cy="255" rx="44" ry="8"/>
+          </g>
+          <!-- 鳥 -->
+          <g stroke="#33203f" stroke-width="2.4" fill="none" stroke-linecap="round">
+            <path d="M118,168 q6,-6 12,0 q6,-6 12,0"/>
+            <path d="M160,190 q5,-5 10,0 q5,-5 10,0"/>
+          </g>
+          <!-- 太陽 -->
+          <circle cx="200" cy="472" r="105" fill="url(#sunGlow)"/>
+          <circle cx="200" cy="472" r="47" fill="#ffcf8f" opacity="0.8"/>
+          <circle cx="200" cy="472" r="33" fill="#fff3d6"/>
+
+          <!-- 遠景の街並み -->
+          <g fill="#3a2b4d" opacity="0.92">
+            <rect x="-5" y="440" width="42" height="72"/>
+            <rect x="42" y="420" width="30" height="92"/>
+            <rect x="78" y="452" width="48" height="60"/>
+            <rect x="290" y="430" width="36" height="82"/>
+            <rect x="332" y="448" width="30" height="64"/>
+            <rect x="366" y="424" width="40" height="88"/>
+          </g>
+          <g fill="#2c2140">
+            <rect x="120" y="458" width="52" height="54"/>
+            <rect x="228" y="452" width="58" height="60"/>
+            <rect x="176" y="470" width="48" height="42"/>
+          </g>
+          <!-- 朝日に光る窓 -->
+          <g fill="#ffd98c" opacity="0.75">
+            <rect x="52" y="436" width="5" height="7"/><rect x="62" y="452" width="5" height="7"/>
+            <rect x="300" y="446" width="5" height="7"/><rect x="376" y="440" width="5" height="7"/>
+            <rect x="240" y="466" width="5" height="7"/>
+          </g>
+
+          <!-- 屋上のフェンス -->
+          <rect x="0" y="372" width="400" height="136" fill="url(#fenceMesh)"/>
+          <rect x="0" y="368" width="400" height="6" fill="#1d1428"/>
+          <rect x="0" y="436" width="400" height="4" fill="#1d1428" opacity="0.8"/>
+          <g fill="#1d1428">
+            <rect x="6" y="368" width="6" height="142"/>
+            <rect x="102" y="368" width="6" height="142"/>
+            <rect x="198" y="368" width="6" height="142"/>
+            <rect x="294" y="368" width="6" height="142"/>
+            <rect x="388" y="368" width="6" height="142"/>
+          </g>
+
+          <!-- パラペット（屋上の縁） -->
+          <rect x="0" y="508" width="400" height="26" fill="#241a33"/>
+          <rect x="0" y="508" width="400" height="3" fill="#ffb877" opacity="0.55"/>
+
+          <!-- 屋上の床 -->
+          <rect x="0" y="534" width="400" height="266" fill="url(#floorGrad)"/>
+          <g stroke="#ffb877" stroke-width="1.4" opacity="0.13">
+            <path d="M60,534 L10,800"/><path d="M150,534 L120,800"/>
+            <path d="M250,534 L280,800"/><path d="M340,534 L392,800"/>
+            <path d="M0,610 L400,610"/><path d="M0,700 L400,700"/>
+          </g>
+          <!-- 水たまりの朝日反射 -->
+          <ellipse cx="255" cy="668" rx="62" ry="10" fill="#ffb877" opacity="0.20"/>
+          <ellipse cx="255" cy="668" rx="34" ry="5" fill="#ffe3ae" opacity="0.25"/>
+
+          <!-- 給水タンクと室外機のシルエット -->
+          <g fill="#171022">
+            <rect x="18" y="618" width="64" height="52"/>
+            <path d="M14,618 L86,618 L50,592 Z"/>
+            <rect x="30" y="670" width="8" height="26"/><rect x="62" y="670" width="8" height="26"/>
+            <rect x="322" y="640" width="56" height="38"/>
+            <rect x="330" y="626" width="40" height="14"/>
+          </g>
+          <rect x="18" y="618" width="64" height="3" fill="#ffb877" opacity="0.35"/>
+        </svg>
+      </div>
       <div class="result-emoji" id="result-emoji">🎉</div>
       <div class="result-title win" id="result-title">オペ成功！</div>
       <p class="result-msg" id="result-msg"></p>
@@ -173,6 +324,11 @@
           [0.20, 0.25], [0.74, 0.21], [0.24, 0.30], [0.76, 0.37],
           [0.22, 0.44], [0.72, 0.50], [0.26, 0.57], [0.70, 0.63],
           [0.30, 0.69], [0.60, 0.77]
+        ]},
+        { name: '虎澤先輩', tolScale: 0.46, bpm: 140, ctrl: [
+          [0.18, 0.24], [0.78, 0.20], [0.20, 0.28], [0.80, 0.34],
+          [0.18, 0.40], [0.76, 0.46], [0.22, 0.52], [0.78, 0.58],
+          [0.24, 0.64], [0.72, 0.69], [0.32, 0.74], [0.58, 0.79]
         ]}
       ];
       var stage = 0;        // 現在のステージ（0始まり）
@@ -227,7 +383,9 @@
       function tolRadius() { return Math.max(11, Math.min(W, H) * 0.046 * STAGES[stage].tolScale); }
 
       function updateStageHud() {
-        stageLabel.textContent = 'STAGE ' + (stage + 1) + '/' + STAGES.length + ' ' + STAGES[stage].name;
+        var isFinal = stage === STAGES.length - 1;
+        stageLabel.textContent = (isFinal ? 'FINAL STAGE ' : 'STAGE ' + (stage + 1) + '/' + STAGES.length + ' ') + STAGES[stage].name;
+        stageLabel.className = isFinal ? 'final' : '';
         for (var i = 0; i < stageDots.length; i++) {
           stageDots[i].className = i < stage ? 'done' : (i === stage ? 'now' : '');
         }
@@ -441,26 +599,32 @@
         var retryBtn = document.getElementById('retry-btn');
         var restartBtn = document.getElementById('restart-btn');
         restartBtn.style.display = 'none';
+        var resultScreen = document.getElementById('result-screen');
         if (state === STATE.WIN) {
-          emoji.textContent = '🎉';
+          resultScreen.classList.add('win-mode');
+          emoji.textContent = '🌅';
           title.textContent = '全オペ成功！';
           title.className = 'result-title win';
-          msg.innerHTML = '全' + STAGES.length + 'ステージ制覇！見事な縫合でした、柴咲先生。<br>患者は無事です。（合計タイム ' + totalTime.toFixed(1) + '秒）';
-          retryBtn.textContent = 'STAGE 1からもう一度';
+          msg.innerHTML = '全' + STAGES.length + 'ステージ制覇！最終ステージ「虎澤先輩」まで縫い切りました。<br>見事な縫合でした、柴咲先生。患者は無事です。（合計タイム ' + totalTime.toFixed(1) + '秒）<br>夜通しのオペが終わって、屋上に朝日が昇ってきました。';
+          retryBtn.textContent = 'もう1回遊ぶ！';
         } else if (state === STATE.STAGECLEAR) {
+          resultScreen.classList.remove('win-mode');
           emoji.textContent = '✨';
           title.textContent = 'STAGE ' + (stage + 1) + ' クリア！';
           title.className = 'result-title clear';
           var next = STAGES[stage + 1];
-          msg.innerHTML = STAGES[stage].name + '、無事に縫合完了。（タイム ' + sec + '秒）<br>次の患者が来ました……<b style="color:#ffd166">STAGE ' + (stage + 2) + '：' + next.name + '</b><br>線はもっと細く、もっとクネクネします。';
-          retryBtn.textContent = '次のオペへ（STAGE ' + (stage + 2) + '）';
+          var nextIsFinal = (stage + 1) === STAGES.length - 1;
+          msg.innerHTML = STAGES[stage].name + '、無事に縫合完了。（タイム ' + sec + '秒）<br>次の患者が来ました……<b style="color:#ffd166">' + (nextIsFinal ? '最終ステージ' : 'STAGE ' + (stage + 2)) + '：' + next.name + '</b><br>線はもっと細く、もっとクネクネします。';
+          retryBtn.textContent = nextIsFinal ? '最終ステージへ（' + next.name + '）' : '次のオペへ（STAGE ' + (stage + 2) + '）';
           restartBtn.style.display = '';
         } else {
+          resultScreen.classList.remove('win-mode');
           emoji.textContent = '💀';
           title.textContent = '患者は死亡しました';
           title.className = 'result-title lose';
-          msg.innerHTML = '線からはみ出しました……。<br>STAGE ' + (stage + 1) + '「' + STAGES[stage].name + '」切開 ' + Math.floor(pathLen[progress] / totalLen * 100) + '% 地点で心停止。';
-          retryBtn.textContent = 'STAGE ' + (stage + 1) + ' から再挑戦';
+          var isFinalStage = stage === STAGES.length - 1;
+          msg.innerHTML = '線からはみ出しました……。<br>' + (isFinalStage ? '最終ステージ' : 'STAGE ' + (stage + 1)) + '「' + STAGES[stage].name + '」切開 ' + Math.floor(pathLen[progress] / totalLen * 100) + '% 地点で心停止。';
+          retryBtn.textContent = (isFinalStage ? '最終ステージ' : 'STAGE ' + (stage + 1)) + ' から再挑戦';
           if (stage > 0) restartBtn.style.display = '';
         }
         document.getElementById('result-screen').classList.remove('hidden');
@@ -545,13 +709,25 @@
         resetGame(0);
       });
       document.getElementById('retry-btn').addEventListener('click', function () {
-        document.getElementById('result-screen').classList.add('hidden');
         initAudio();
+        if (state === STATE.WIN) {
+          // 全クリア後：屋上から落ちるようにフェードアウトしてから最初へ
+          var rs = document.getElementById('result-screen');
+          playFall();
+          rs.classList.add('falling');
+          var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          setTimeout(function () {
+            rs.classList.remove('falling');
+            rs.classList.remove('win-mode');
+            rs.classList.add('hidden');
+            totalTime = 0;
+            resetGame(0);
+          }, reduced ? 340 : 1180);
+          return;
+        }
+        document.getElementById('result-screen').classList.add('hidden');
         if (state === STATE.STAGECLEAR) {
           resetGame(stage + 1);            // 次のステージへ
-        } else if (state === STATE.WIN) {
-          totalTime = 0;
-          resetGame(0);                    // 最初から
         } else {
           resetGame(stage);                // 死亡：同じステージから再挑戦
         }
@@ -647,6 +823,21 @@
         g.gain.exponentialRampToValueAtTime(0.0008, t + 1.15);
         o.connect(g); g.connect(audioCtx.destination);
         o.start(t); o.stop(t + 1.2);
+      }
+
+      // 全クリア後の落下：下降する口笛のような音
+      function playFall() {
+        if (!audioCtx) return;
+        var t = audioCtx.currentTime;
+        var o = audioCtx.createOscillator(); o.type = 'sine';
+        o.frequency.setValueAtTime(880, t);
+        o.frequency.exponentialRampToValueAtTime(140, t + 1.0);
+        var g = audioCtx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.07, t + 0.15);
+        g.gain.exponentialRampToValueAtTime(0.0008, t + 1.05);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + 1.1);
       }
 
       // 成功時：短い上昇アルペジオ
