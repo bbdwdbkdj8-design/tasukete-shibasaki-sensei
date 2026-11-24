@@ -83,19 +83,48 @@
       }
       #result-screen.win-mode .result-emoji { filter: drop-shadow(0 2px 10px rgba(255,150,80,.7)); }
 
-      /* ===== 屋上から落ちるフェードアウト ===== */
+      /* ===== 突き落とされるフェードアウト =====
+         背中をドンッと押される衝撃 → 一瞬の浮遊 → 回転しながら加速落下 */
       #result-screen.falling {
-        animation: fallAway 1.15s cubic-bezier(.5, 0, .9, .4) forwards;
+        animation: pushedFall 1.7s cubic-bezier(.55, 0, .85, .45) forwards;
+        transform-origin: 50% 38%;
         pointer-events: none;
       }
-      @keyframes fallAway {
-        0%   { transform: translateY(0) rotate(0deg); opacity: 1; filter: blur(0); }
-        12%  { transform: translateY(1.6vh) rotate(-0.4deg); opacity: 1; }
-        55%  { opacity: 0.85; }
-        100% { transform: translateY(108vh) rotate(2.6deg); opacity: 0; filter: blur(3px); }
+      @keyframes pushedFall {
+        0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; filter: blur(0); }
+        5%   { transform: translate(-2.5vw, 2.2vh) rotate(-2.2deg) scale(0.985); opacity: 1; }  /* ドンッ：押された衝撃 */
+        9%   { transform: translate(1.2vw, 1.2vh) rotate(1deg) scale(0.99); }                  /* 反動 */
+        16%  { transform: translate(0, 0.6vh) rotate(0.4deg) scale(0.995); }                   /* フェンス際で一瞬止まる */
+        26%  { transform: translateY(4vh) rotate(-3deg) scale(0.98); filter: blur(0.5px); }     /* 落下開始 */
+        45%  { transform: translateY(16vh) rotate(7deg) scale(0.95); filter: blur(1.5px); }
+        65%  { transform: translateY(42vh) rotate(-11deg) scale(0.90); filter: blur(3px); opacity: 0.96; }
+        82%  { transform: translateY(76vh) rotate(15deg) scale(0.84); filter: blur(5px); opacity: 0.82; }
+        100% { transform: translateY(118vh) rotate(-22deg) scale(0.76); filter: blur(8px); opacity: 0; }
+      }
+      /* 押された瞬間の「ドンッ」表示 */
+      #result-screen > #push-mark,
+      #result-screen.win-mode > #push-mark {
+        display: none;
+        position: absolute; top: 16%; left: 50%;
+        transform: translateX(-50%) rotate(-8deg);
+        font-size: clamp(44px, 14vw, 72px); font-weight: 900; letter-spacing: .06em;
+        color: #fff;
+        text-shadow: 0 0 0 #d92b3f, 3px 3px 0 #d92b3f, 0 4px 18px rgba(0,0,0,.55);
+        z-index: 3; pointer-events: none;
+      }
+      #result-screen.falling #push-mark {
+        display: block;
+        animation: pushPop .5s ease-out forwards;
+      }
+      @keyframes pushPop {
+        0% { opacity: 0; transform: translateX(-50%) rotate(-8deg) scale(2.4); }
+        35% { opacity: 1; transform: translateX(-50%) rotate(-8deg) scale(1); }
+        70% { opacity: 1; }
+        100% { opacity: 0; transform: translateX(-50%) rotate(-8deg) scale(0.94); }
       }
       @media (prefers-reduced-motion: reduce) {
         #result-screen.falling { animation: fallFade .3s ease-out forwards; }
+        #result-screen.falling #push-mark { display: none; animation: none; }
         @keyframes fallFade { to { opacity: 0; } }
       }
 
@@ -277,6 +306,7 @@
           <rect x="18" y="618" width="64" height="3" fill="#ffb877" opacity="0.35"/>
         </svg>
       </div>
+      <div id="push-mark" aria-hidden="true">ドンッ</div>
       <div class="result-emoji" id="result-emoji">🎉</div>
       <div class="result-title win" id="result-title">オペ成功！</div>
       <p class="result-msg" id="result-msg"></p>
@@ -605,7 +635,7 @@
           emoji.textContent = '🌅';
           title.textContent = '全オペ成功！';
           title.className = 'result-title win';
-          msg.innerHTML = '全' + STAGES.length + 'ステージ制覇！最終ステージ「虎澤先輩」まで縫い切りました。<br>見事な縫合でした、柴咲先生。患者は無事です。（合計タイム ' + totalTime.toFixed(1) + '秒）<br>夜通しのオペが終わって、屋上に朝日が昇ってきました。';
+          msg.innerHTML = '全' + STAGES.length + 'ステージ制覇！最終ステージ「虎澤先輩」まで縫い切りました。<br>見事な縫合でした、柴咲先生。患者は無事です。（合計タイム ' + totalTime.toFixed(1) + '秒）<br>夜通しのオペが終わり――屋上では虎澤先輩が、一人で朝焼けを眺めていました。<br>……その背後に、忍び寄る影。';
           retryBtn.textContent = 'もう1回遊ぶ！';
         } else if (state === STATE.STAGECLEAR) {
           resultScreen.classList.remove('win-mode');
@@ -711,18 +741,18 @@
       document.getElementById('retry-btn').addEventListener('click', function () {
         initAudio();
         if (state === STATE.WIN) {
-          // 全クリア後：屋上から落ちるようにフェードアウトしてから最初へ
+          // 全クリア後：虎澤先輩が屋上から突き落とされる演出でフェードアウトしてから最初へ
           var rs = document.getElementById('result-screen');
-          playFall();
-          rs.classList.add('falling');
           var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (!reduced) playPushedFall();
+          rs.classList.add('falling');
           setTimeout(function () {
             rs.classList.remove('falling');
             rs.classList.remove('win-mode');
             rs.classList.add('hidden');
             totalTime = 0;
             resetGame(0);
-          }, reduced ? 340 : 1180);
+          }, reduced ? 340 : 1750);
           return;
         }
         document.getElementById('result-screen').classList.add('hidden');
@@ -825,19 +855,91 @@
         o.start(t); o.stop(t + 1.2);
       }
 
-      // 全クリア後の落下：下降する口笛のような音
-      function playFall() {
+      // 全クリア後の「突き落とされ」SE：
+      // ドンッ（突く衝撃）→ 悲鳴が遠ざかる → 風切り音 → 地面への激突音
+      function noiseBuffer(dur) {
+        var len = Math.floor(audioCtx.sampleRate * dur);
+        var buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+        var d = buf.getChannelData(0);
+        for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+        return buf;
+      }
+
+      function playPushedFall() {
         if (!audioCtx) return;
         var t = audioCtx.currentTime;
-        var o = audioCtx.createOscillator(); o.type = 'sine';
-        o.frequency.setValueAtTime(880, t);
-        o.frequency.exponentialRampToValueAtTime(140, t + 1.0);
-        var g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.07, t + 0.15);
-        g.gain.exponentialRampToValueAtTime(0.0008, t + 1.05);
-        o.connect(g); g.connect(audioCtx.destination);
-        o.start(t); o.stop(t + 1.1);
+
+        // ① ドンッ：背中を突く衝撃（低音の打撃＋ノイズバースト）
+        var thud = audioCtx.createOscillator(); thud.type = 'sine';
+        thud.frequency.setValueAtTime(130, t);
+        thud.frequency.exponentialRampToValueAtTime(42, t + 0.16);
+        var thudG = audioCtx.createGain();
+        thudG.gain.setValueAtTime(0.5, t);
+        thudG.gain.exponentialRampToValueAtTime(0.0008, t + 0.2);
+        thud.connect(thudG); thudG.connect(audioCtx.destination);
+        thud.start(t); thud.stop(t + 0.22);
+        var nb = audioCtx.createBufferSource(); nb.buffer = noiseBuffer(0.12);
+        var nf = audioCtx.createBiquadFilter(); nf.type = 'lowpass'; nf.frequency.value = 900;
+        var ng = audioCtx.createGain();
+        ng.gain.setValueAtTime(0.30, t);
+        ng.gain.exponentialRampToValueAtTime(0.0008, t + 0.12);
+        nb.connect(nf); nf.connect(ng); ng.connect(audioCtx.destination);
+        nb.start(t); nb.stop(t + 0.14);
+
+        // ② 悲鳴：少し遅れて始まり、音程と音量が落ちながら遠ざかる
+        var sT = t + 0.14, sDur = 1.25;
+        [0, 4].forEach(function (det) {
+          var o = audioCtx.createOscillator(); o.type = 'sawtooth';
+          o.frequency.setValueAtTime(760 + det * 6, sT);
+          o.frequency.exponentialRampToValueAtTime(150, sT + sDur);
+          o.detune.value = det;
+          var bp = audioCtx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.1;
+          bp.frequency.setValueAtTime(1150, sT);
+          bp.frequency.exponentialRampToValueAtTime(320, sT + sDur);
+          var vib = audioCtx.createOscillator(); vib.frequency.value = 26;
+          var vibG = audioCtx.createGain();
+          vibG.gain.setValueAtTime(4, sT);
+          vibG.gain.linearRampToValueAtTime(30, sT + 0.5);
+          vib.connect(vibG); vibG.connect(o.frequency);
+          var g = audioCtx.createGain();
+          g.gain.setValueAtTime(0.0001, sT);
+          g.gain.exponentialRampToValueAtTime(0.055, sT + 0.07);
+          g.gain.exponentialRampToValueAtTime(0.0008, sT + sDur);
+          o.connect(bp); bp.connect(g); g.connect(audioCtx.destination);
+          o.start(sT); o.stop(sT + sDur + 0.05);
+          vib.start(sT); vib.stop(sT + sDur + 0.05);
+        });
+
+        // ③ 風切り音：落下につれて強く・高く
+        var wT = t + 0.28, wDur = 1.3;
+        var wn = audioCtx.createBufferSource(); wn.buffer = noiseBuffer(wDur + 0.1); wn.loop = false;
+        var wf = audioCtx.createBiquadFilter(); wf.type = 'bandpass'; wf.Q.value = 0.7;
+        wf.frequency.setValueAtTime(380, wT);
+        wf.frequency.exponentialRampToValueAtTime(2100, wT + wDur);
+        var wg = audioCtx.createGain();
+        wg.gain.setValueAtTime(0.0001, wT);
+        wg.gain.exponentialRampToValueAtTime(0.16, wT + wDur * 0.85);
+        wg.gain.exponentialRampToValueAtTime(0.0008, wT + wDur);
+        wn.connect(wf); wf.connect(wg); wg.connect(audioCtx.destination);
+        wn.start(wT); wn.stop(wT + wDur + 0.05);
+
+        // ④ 激突：落下の終わりに低いドンッ
+        var iT = t + 1.58;
+        var io = audioCtx.createOscillator(); io.type = 'sine';
+        io.frequency.setValueAtTime(95, iT);
+        io.frequency.exponentialRampToValueAtTime(30, iT + 0.28);
+        var ig = audioCtx.createGain();
+        ig.gain.setValueAtTime(0.55, iT);
+        ig.gain.exponentialRampToValueAtTime(0.0008, iT + 0.34);
+        io.connect(ig); ig.connect(audioCtx.destination);
+        io.start(iT); io.stop(iT + 0.36);
+        var inb = audioCtx.createBufferSource(); inb.buffer = noiseBuffer(0.2);
+        var inf = audioCtx.createBiquadFilter(); inf.type = 'lowpass'; inf.frequency.value = 500;
+        var ing = audioCtx.createGain();
+        ing.gain.setValueAtTime(0.32, iT);
+        ing.gain.exponentialRampToValueAtTime(0.0008, iT + 0.2);
+        inb.connect(inf); inf.connect(ing); ing.connect(audioCtx.destination);
+        inb.start(iT); inb.stop(iT + 0.22);
       }
 
       // 成功時：短い上昇アルペジオ
